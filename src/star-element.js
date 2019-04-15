@@ -1,11 +1,17 @@
-import {html, LitElement} from 'https://unpkg.com/lit-element@2.1.0/lit-element.js?module'
+import {
+  html,
+  LitElement
+} from "https://unpkg.com/lit-element@2.1.0/lit-element.js?module";
 
 export class StarElement extends LitElement {
-    render() {
-        return html`test`;
-    }
+  render() {
+    return html`
+      test
+    `;
+  }
 }
-window.customElements.define('star-element', StarElement);
+
+window.customElements.define("star-element", StarElement);
 /*
  * --------------------------------------
  *   nBody n^2 Numerical Simulation

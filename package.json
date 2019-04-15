@@ -4,6 +4,7 @@
   "description": "",
   "main": "nbody.js",
   "scripts": {
+    "start": "sirv --dev --port 8080",
     "prettier": "prettier --check ./src/**/*.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,13 +14,10 @@
   },
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Donskelle/nbody-toy/issues"
-  },
   "homepage": "https://github.com/Donskelle/nbody-toy#readme",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
-    "prettier": "1.17.0"
+    "prettier": "1.17.0",
+    "sirv-cli": "^0.3.0"
   }
 }
