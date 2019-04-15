@@ -4,6 +4,7 @@
   "description": "",
   "main": "nbody.js",
   "scripts": {
+    "prettier": "prettier --check ./src/**/*.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,6 +18,8 @@
   },
   "homepage": "https://github.com/Donskelle/nbody-toy#readme",
   "dependencies": {
-    "lit-element": "^2.1.0"
+  },
+  "devDependencies": {
+    "prettier": "1.17.0"
   }
 }
