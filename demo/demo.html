@@ -1,0 +1,24 @@
+<!DOCTYPE =html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <div id="debug"><span>Console</span>intiated.</div>
+  </body>
+
+  <script src="../src/lib/stats.min.js"></script>
+  <script
+    type="module"
+    async
+    src="https://unpkg.com/dimport?module"
+    data-main="../src/grafity-element.js"
+  ></script>
+  <script
+    nomodule
+    async
+    src="https://unpkg.com/dimport/nomodule"
+    data-main="../src/grafity-element.js"
+  ></script>
+</html>
