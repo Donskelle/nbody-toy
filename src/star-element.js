@@ -4,6 +4,17 @@ import {
   css
 } from "https://unpkg.com/lit-element@2.1.0/lit-element.js?module";
 
+import {
+  clearCanvas,
+  deltaX,
+  deltaY,
+  dist,
+  grav,
+  radian,
+  radius,
+  createStar
+} from "./lib/star-helpers.js";
+
 export class StarElement extends LitElement {
   render() {
     return html`
@@ -14,7 +25,7 @@ export class StarElement extends LitElement {
   static get properties() {
     return {
       canvasCtxs: { type: Array },
-      starsCount: { type: Number, attribute: "stars-count" },
+      starsCount: { type: Number, attribute: "star-count" },
       stars: { type: Array },
 
       // clear constant; every CLRth iteration, the screen is cleared with opaque black.
@@ -71,17 +82,7 @@ export class StarElement extends LitElement {
 
     // init stars
     for (let i = 0; i < this.starsCount; i++) {
-      const mass = 2 + Math.random() * 10;
-      this.stars.push({
-        mass,
-        x: Math.random() * width - width / 2,
-        y: Math.random() * height - height / 2,
-        iStr: Math.random() * 15,
-        iAng: Math.random() * Math.PI * 2,
-        radius: radius(mass),
-        untouchable: 0,
-        colliding: 0
-      });
+      this.stars.push(createStar(this.sizes));
     }
   }
 
@@ -96,8 +97,18 @@ export class StarElement extends LitElement {
     ];
   }
 
+  startShower(count = 10) {
+    for (let i = 0; i < count; i++) {
+      this.stars.push(
+        createStar(this.sizes, {
+          iStr: 50
+        })
+      );
+    }
+  }
+
   updateCanvas() {
-    // clear canvases
+    // clear canvas
     if (this.clrCount === this.CLR) {
       clearCanvas(this.canvasCtxs[1], true, this.sizes);
       this.clrCount = 0;
@@ -107,7 +118,6 @@ export class StarElement extends LitElement {
     clearCanvas(this.canvasCtxs[2], false, this.sizes);
     clearCanvas(this.canvasCtxs[3], false, this.sizes);
 
-    const n = this.stars.length;
     // Outer Loop
     // ------------
     // we iterate through all bodies and for each we check what forces are applied by all other bodies
@@ -120,86 +130,89 @@ export class StarElement extends LitElement {
           if (otherStar.untouchable == 0 && i !== j && otherStar) {
             // calculate distance vector between star and otherStar
             let distBetween = dist(star.x, star.y, otherStar.x, otherStar.y);
-            
+
             // This prevents NaN, undefined and false values for distBetween
             // The next line returns the expression to the right if the left side is falsy
             distBetween = distBetween || 0;
 
-            // collision check, tests for touching bodies
-            if (distBetween >= star.radius + otherStar.radius) {
-              // No Collision
-              // --------------
+            if (distBetween < 500) {
+              // collision check, tests for touching bodies
+              if (distBetween >= star.radius + otherStar.radius) {
+                // No Collision
+                // --------------
 
-              // calculate radian for distance vector between star and otherStar
-              const thisRadian = radian(
-                star.x,
-                star.y,
-                otherStar.x,
-                otherStar.y
-              );
-              // calculate attraction vector for otherStar's effect on star
-              // This vector is only affecting star!
-              const thisAttraction = grav(
-                star.mass,
-                otherStar.mass,
-                distBetween
-              );
+                // calculate radian for distance vector between star and otherStar
+                const thisRadian = radian(
+                  star.x,
+                  star.y,
+                  otherStar.x,
+                  otherStar.y
+                );
+                // calculate attraction vector for otherStar's effect on star
+                // This vector is only affecting star!
+                const thisAttraction = grav(
+                  star.mass,
+                  otherStar.mass,
+                  distBetween
+                );
 
-              // draw attraction vector from otherStar to star
-              // for some reason, deltaX and Y need to be reversed. #bug #bugfix
-              const attractionX = deltaY(thisRadian, thisAttraction);
-              const attractionY = deltaX(thisRadian, thisAttraction);
+                // draw attraction vector from otherStar to star
+                // for some reason, deltaX and Y need to be reversed. #bug #bugfix
+                const attractionX = deltaY(thisRadian, thisAttraction);
+                const attractionY = deltaX(thisRadian, thisAttraction);
 
-              // Calculate vector product of star impulse vector and attraction vecor
-              const aStr = dist(
-                star.x,
-                star.y,
-                star.x + deltaX(star.iAng, star.iStr) + attractionX,
-                star.y + deltaY(star.iAng, star.iStr) + attractionY
-              );
-              const aAng =
-                Math.PI * 0.5 -
-                radian(
+                // Calculate vector product of star impulse vector and attraction vecor
+                const aStr = dist(
                   star.x,
                   star.y,
                   star.x + deltaX(star.iAng, star.iStr) + attractionX,
                   star.y + deltaY(star.iAng, star.iStr) + attractionY
                 );
+                const aAng =
+                  Math.PI * 0.5 -
+                  radian(
+                    star.x,
+                    star.y,
+                    star.x + deltaX(star.iAng, star.iStr) + attractionX,
+                    star.y + deltaY(star.iAng, star.iStr) + attractionY
+                  );
 
-              // update star attraction vector.
-              // can't be done as part of the before statement because the aAng line references the previous star.iStr value!
+                // update star attraction vector.
+                // can't be done as part of the before statement because the aAng line references the previous star.iStr value!
 
-              star.iStr = aStr;
-              star.iAng = aAng;
-            } else {
-              // Collision
-              // -----------
+                star.iStr = aStr;
+                star.iAng = aAng;
+              } else {
+                // Collision
+                // -----------
 
-              // find out which is the larger object, that one will eat the smaller one.
-              // eventually, we'll do this gradually for a smoother visual effect.
-              // we could even simulate explosive collisions, but we need a cohesion calculation,
-              // based on impulse, mass and density as a simplified model.
-              this.mergeBodies(i, j);
+                // find out which is the larger object, that one will eat the smaller one.
+                // eventually, we'll do this gradually for a smoother visual effect.
+                // we could even simulate explosive collisions, but we need a cohesion calculation,
+                // based on impulse, mass and density as a simplified model.
+                this.mergeBodies(i, j);
+              }
             }
           }
         });
-      }
-
-      // Update Positions
-      // updates x,y position based on impulse vector.
-      star.x += deltaX(star.iAng, star.iStr / 2 / star.mass);
-      star.y += deltaY(star.iAng, star.iStr / 2 / star.mass);
-      if(!star.delete)
-        this.drawStar(star);
-
-      if (star.untouchable > 0) { 
-        star.untouchable--;
       }
     });
 
     // remove deleted
     this.stars = this.stars.filter(star => !star.delete);
-    
+    this.stars.forEach(star => {
+      // Update Positions
+      // updates x,y position based on impulse vector.
+      star.x += deltaX(star.iAng, star.iStr / 2 / star.mass);
+      star.y += deltaY(star.iAng, star.iStr / 2 / star.mass);
+
+      this.drawStar(star);
+
+      if (star.untouchable > 0) {
+        star.untouchable--;
+      }
+    });
+
     const [canvasToDraw, ctx1, ctx2, ctx3] = this.canvasCtxs;
     canvasToDraw.clearRect(0, 0, this.sizes.width, this.sizes.height);
 
@@ -236,11 +249,11 @@ export class StarElement extends LitElement {
         var glowRadius = star.radius * 2;
         //var gradient = ctx2.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.radius*10);
         var gradient = ctx2.createRadialGradient(
-          star.x + centerX,
-          star.y + centerY,
+          star.x,
+          star.y,
           star.radius,
-          star.x + centerX,
-          star.y + centerY,
+          star.x,
+          star.y,
           glowRadius
         );
         gradient.addColorStop(
@@ -268,26 +281,8 @@ export class StarElement extends LitElement {
             ")"
         );
 
-        // Add two color stops
-        // gradient.addColorStop(
-        //   0,
-        //   `<hsla(${((star.iStr / star.mass) * 100).toFixed(1)},${(star.iStr *
-        //     60).toFixed(1)}%,${(star.mass / 4 + 40).toFixed(1)}%, 0.5)`
-        // );
-        // gradient.addColorStop(
-        //   1,
-        //   `"hsla(${(star.iStr / star.mass) * 100},${star.iStr *
-        //     60}%, ${star.mass / 4 + 40}%, 0)`
-        // );
-
         ctx2.beginPath();
-        ctx2.arc(
-          star.x + centerX,
-          star.y + centerY,
-          glowRadius,
-          0,
-          2 * Math.PI
-        );
+        ctx2.arc(star.x, star.y, glowRadius, 0, 2 * Math.PI);
         ctx2.strokeStyle = "transparent";
         ctx2.fillStyle = gradient;
         ctx2.fill();
@@ -295,7 +290,7 @@ export class StarElement extends LitElement {
 
       // Body
       ctx3.beginPath();
-      ctx3.arc(star.x + centerX, star.y + centerY, star.radius, 0, 2 * Math.PI);
+      ctx3.arc(star.x, star.y, star.radius, 0, 2 * Math.PI);
       ctx3.strokeStyle = color;
       ctx3.fillStyle = color;
       ctx3.fill();
@@ -307,7 +302,6 @@ export class StarElement extends LitElement {
     const starA = this.stars[i];
     const starB = this.stars[j];
 
-    console.log(starA, starB);
     // this routine regularly compares a body against itself, due to the shifts in the array.
     // since this simulation uses random masses, it will be highly unlikely that two bodies will
     // randomly have the exact same mass. so as a dirty fix, we do only merge bodies of non equal masses.
@@ -330,14 +324,14 @@ export class StarElement extends LitElement {
         starB.mass += starA.mass;
         starB.radius = radius(starB.mass);
         const sumDX =
-        deltaX(starB.iAng, starB.iStr) + deltaX(starA.iAng, starA.iStr);
+          deltaX(starB.iAng, starB.iStr) + deltaX(starA.iAng, starA.iStr);
         const sumDY =
-        deltaY(starB.iAng, starB.iStr) + deltaY(starA.iAng, starA.iStr);
+          deltaY(starB.iAng, starB.iStr) + deltaY(starA.iAng, starA.iStr);
         starB.iStr = dist(starB.x, starB.y, starB.x + sumDX, starB.y + sumDY);
         starB.iAng =
-        Math.PI * 0.5 -
-        radian(starB.x, starB.y, starB.x + sumDX, starB.y + sumDY);
-        
+          Math.PI * 0.5 -
+          radian(starB.x, starB.y, starB.x + sumDX, starB.y + sumDY);
+
         //removing item by filtering array
         starA.delete = true;
       }
@@ -346,69 +340,3 @@ export class StarElement extends LitElement {
 }
 
 window.customElements.define("star-element", StarElement);
-
-// Vector Math Functions
-function dist(x1, y1, x2, y2) {
-  // works, delivers always positive value
-  return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-}
-
-function radian(x1, y1, x2, y2) {
-  return Math.atan2(x2 - x1, y2 - y1); // In radians, bottom is 0, top is 3.1415
-}
-
-function deltaX(angle, strength) {
-  return Math.cos(angle) * strength; // turns angular vector into x delta coordinate
-}
-
-function deltaY(angle, strength) {
-  return Math.sin(angle) * strength; // turns angular vector into y delta coordinate
-}
-
-function grav(m1, m2, dist) {
-  //return (m * g) / Math.pow(dist, 2);
-  return (0.0667408 * m1 * m2) / Math.pow(dist, 2);
-}
-
-function radius(m) {
-  // it would be nice to calculate density, but one challenge at a time.
-  // density could be a multiplier that delivers a value that grows very slowly and then increases enormously at large m values
-  // combined with luminosity and radiation pressure, simulating stars would become feasible.
-  // not sure how to incorporate more than the main sequence of star development: https://de.wikipedia.org/wiki/Hauptreihe#/media/File:HRDiagram.png
-
-  return Math.sqrt(m / Math.PI); // this assumes mass is f(x) = x of the surface area and returns the radius. iff mass increases density, insert factor here.
-}
-
-function density(m) {
-  // Density is an arbitrary calculation based on an exponential equation.
-  // y = 0.1 * x^2 + 1        modify the x multiplier to strengthen or weaken the effect.
-  // This can be used to calculate compression of heavy bodies and ignition of super heavy bodies.
-
-  return 0.1 * (m * m) + 1;
-}
-
-/*
- * --------------------------------------
- *   FUNCTIONS
- * --------------------------------------
- */
-
-function clearCanvas(context, opaque, sizes) {
-  if (opaque) {
-    // opaqueness is created by a relatively intransparent clear effect and a clear counter, only working it every CLR iterations. this reduces grey traces.
-    context.fillStyle = "rgba(0,0,0,.2)";
-    context.fillRect(0, 0, sizes.width, sizes.height);
-  } else {
-    context.clearRect(0, 0, sizes.width, sizes.height);
-  }
-}
-
-// this checks the amount of bodies and the distance of the current pair,
-// to limit calulations for large groups. bad implementation, but very simple.
-function powerSaving(distance, amount) {
-  if (amount > 500 && distance > 500) {
-    return false;
-  } else {
-    return true;
-  }
-}

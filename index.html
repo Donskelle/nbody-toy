@@ -17,21 +17,40 @@
         width: 100vw;
         display: block;
       }
+      .controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
     </style>
+    <script defer src="https://unpkg.com/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+
+    <script
+      async
+      type="module"
+      src="https://unpkg.com/dimport?module"
+      data-main="./src/star-element.js"
+    ></script>
+    <script
+      nomodule
+      async
+      src="https://unpkg.com/dimport?nomodule"
+      data-main="./src/star-element.js"
+    ></script>
   </head>
   <body>
-    <star-element></star-element>
+    <star-element star-count="600"></star-element>
+    <div class="controls">
+      <button>Star Shower</button>
+    </div>
+
+    <script type="module">
+      WebComponents.waitFor(() => {
+        const buttons = document.querySelectorAll("button");
+        const starEle = document.querySelector("star-element");
+
+        buttons[0].addEventListener("click", () => starEle.startShower());
+      });
+    </script>
   </body>
-  <script
-    async
-    type="module"
-    src="https://unpkg.com/dimport?module"
-    data-main="./src/star-element.js"
-  ></script>
-  <script
-    nomodule
-    async
-    src="https://unpkg.com/dimport?nomodule"
-    data-main="./src/star-element.js"
-  ></script>
 </html>
